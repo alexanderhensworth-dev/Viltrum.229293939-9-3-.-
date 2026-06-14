@@ -1,0 +1,1241 @@
+local Plrs=game:GetService("Players")
+local RS=game:GetService("RunService")
+local UIS=game:GetService("UserInputService")
+local TS=game:GetService("TweenService")
+local Lighting=game:GetService("Lighting")
+local Debris=game:GetService("Debris")
+local MPS=game:GetService("MarketplaceService")
+local AES=game:GetService("AvatarEditorService")
+local HS=game:GetService("HttpService")
+
+local plr=Plrs.LocalPlayer
+local cam=workspace.CurrentCamera
+local mouse=plr:GetMouse()
+
+_G.PWI=_G.PWI or {}
+
+local gNm="Dynamic3DExecutorMenu"
+local pNm="ExecutorMenuPart"
+local dNm="ExecutorMenuDOF"
+local tgtP=plr:WaitForChild("PlayerGui")
+
+if tgtP:FindFirstChild(gNm) then tgtP[gNm]:Destroy() end
+if workspace:FindFirstChild(pNm) then workspace[pNm]:Destroy() end
+if Lighting:FindFirstChild(dNm) then Lighting[dNm]:Destroy() end
+if _G.MRL then _G.MRL:Disconnect() end
+
+-- Sound Setup
+local clSnd=Instance.new("Sound") clSnd.Volume=1.5 clSnd.Parent=game:GetService("SoundService")
+pcall(function() local d=game:HttpGet("https://raw.githubusercontent.com/alexanderhensworth-dev/Viltrum.229293939-9-3-.-/main/YTDown.com_YouTube_Button-Click-Sound-Effect_Media_KFNhJnp7eQ0_001_1080p~2.mp3") writefile("clk.mp3",d) clSnd.SoundId=getcustomasset("clk.mp3") end)
+local function pClk() clSnd:Stop() clSnd:Play() end
+
+-- Badge/Icon Setup
+local bdg={Fly="https://raw.githubusercontent.com/alexanderhensworth-dev/Viltrum.229293939-9-3-.-/refs/heads/main/png-hero-filename-63592751447556113034690034-hero-png-1245.png",Anim="https://raw.githubusercontent.com/alexanderhensworth-dev/Viltrum.229293939-9-3-.-/refs/heads/main/noFilter%20(1).webp",X="https://raw.githubusercontent.com/alexanderhensworth-dev/Viltrum.229293939-9-3-.-/refs/heads/main/twitter-new-logo-twitter-icons-new-twitter-logo-x-2023-x-social-media-icon-free-png.png"}
+local ast={}
+for k,u in pairs(bdg) do pcall(function() local d=game:HttpGet(u) writefile("b_"..k..".png",d) ast[k]=getcustomasset("b_"..k..".png") end) end
+
+local char_,hum,root,anim
+local rig="R15"
+
+local fly=false
+local hov=false
+local lnd=false
+local hl=false
+local shk=0
+
+local bSpd=90
+local mSpd=bSpd
+local acc=0.15
+
+local bst=0
+local ljt=0
+local jcd=0.35
+
+local cSon=false
+local sCT=0
+local SCD=0.35
+
+local cT=0
+local cBl=false
+local cVfx=nil
+local CTH=1.52
+local bHov=false
+
+local lLS=0
+local LR=0.02
+
+local tX=0
+local vR=0
+local rol=false
+local rPr=0
+local rDr=1
+local lTap=0
+local tCD=0.4
+local iBT=0
+local IBSP=1.8
+local IBSH=0.18
+
+local sCap=bSpd
+local cVel=Vector3.zero
+local cRoll=0
+local cPit=0
+local camCF=CFrame.new()
+local tIn=nil
+local lTP=nil
+
+local bv,bg,att0,lvc
+
+local lF=workspace:FindFirstChild("CamMotionLines")
+if not lF then
+	lF=Instance.new("Folder")
+	lF.Name="CamMotionLines"
+	lF.Parent=workspace
+end
+
+local AIDS={
+	R15={
+		FLY="rbxassetid://114833664438028",
+		IDLE="rbxassetid://72072765323406",
+		FALL="rbxassetid://116112330726818",
+		B1="rbxassetid://92365791487740",
+		B2="rbxassetid://85064366773524",
+		CHG="rbxassetid://132846696697494",
+		HOV="rbxassetid://136597289795976",
+		HL="rbxassetid://79698004825744",
+		HOV_LND=nil,
+	},
+	R6={
+		FLY="rbxassetid://90872539",
+		IDLE="rbxassetid://160737408",
+		FALL="rbxassetid://160737408",
+		B1="rbxassetid://120735709",
+		B2="rbxassetid://93648331",
+		CHG=nil,
+		HOV="rbxassetid://160737355",
+		HOVTD="rbxassetid://69427262",
+		HL="rbxassetid://184574340",
+	},
+}
+
+local OFF={ID=3.383,B1=5817.560,B2=0.599,H1=1,H2=12.467,LN=1.321}
+
+local DEFAULT_AIDS={R15={},R6={}}
+for k,v in pairs(AIDS.R15) do DEFAULT_AIDS.R15[k]=v end
+for k,v in pairs(AIDS.R6) do DEFAULT_AIDS.R6[k]=v end
+DEFAULT_AIDS.R15.HOV_LND=nil
+
+local DEFAULT_OFF={}
+for k,v in pairs(OFF) do DEFAULT_OFF[k]=v end
+
+local P_OFF={}
+
+local PRESET_ANIM_DATA={
+	[1]={R15={HOV="rbxassetid://125815409725539",IDLE="rbxassetid://95042587582224"},R6=nil},
+	[2]={R15={HOV="rbxassetid://74854783010509"},R6=nil},
+	[3]={R15={HOV="rbxassetid://134488726991367",IDLE="rbxassetid://117632291849644"},R6=nil},
+	[4]={R15={IDLE="rbxassetid://111366024393484"},R6=nil},
+	[5]={R15={IDLE="rbxassetid://123833063828710",B1="rbxassetid://123833063828710",HOV_LND="rbxassetid://123833063828710",CHG="rbxassetid://98224569210479",IDLE_TIME=0.748,B1_TIME=2.456,HOV_LND_TIME=4.278},R6={IDLE="rbxassetid://115314801778772",IDLE_TIME=7.270}},
+	[6]={R15={IDLE="rbxassetid://120174929897372"},R6={IDLE="rbxassetid://115314801778772",IDLE_TIME=4.252}},
+	[7]={R15=nil,R6={IDLE="rbxassetid://115314801778772",IDLE_TIME=0.757}},
+	[8]={R15=nil,R6={IDLE="rbxassetid://115314801778772",IDLE_TIME=1.698}},
+	[9]={R15=nil,R6={IDLE="rbxassetid://111898867",IDLE_TIME=0.333}},
+}
+
+local fTr,iTr,gTr,boTr,sTr,cgTr,hTr,hTdTr,hlTr,hLndTr
+local aS="none"
+
+local function frz(t) if t then t.Looped=false end end
+local function hld(t,o,f)
+	if not t then return end
+	local tt=o
+	if t.Length>0 then tt=o%t.Length end
+	if not t.IsPlaying then t:Play(f or 0,1,0) end
+	t.TimePosition=tt
+	t:AdjustSpeed(0)
+end
+
+local function ldA()
+	local ids=AIDS[rig]
+	local function ld(id,p)
+		if not id then return nil end
+		local a=Instance.new("Animation")
+		a.AnimationId=id
+		local t=anim:LoadAnimation(a)
+		t.Priority=p or Enum.AnimationPriority.Action
+		return t
+	end
+	fTr=ld(ids.FLY) iTr=ld(ids.IDLE) gTr=ld(ids.FALL)
+	boTr=ld(ids.B1) sTr=ld(ids.B2) hTr=ld(ids.HOV) hlTr=ld(ids.HL)
+	if rig=="R15" then
+		cgTr=ld(ids.CHG)
+		hLndTr=ld(ids.HOV_LND)
+		fTr.Looped=true
+		if P_OFF.IDLE then frz(iTr) end
+		if P_OFF.B1 then frz(boTr) end
+		if P_OFF.HOV_LND then frz(hLndTr) end
+	else
+		hTdTr=ld(ids.HOVTD)
+		fTr.Looped=true
+		for _,t in ipairs({iTr,boTr,sTr,hTr,hTdTr,hlTr}) do frz(t) end
+	end
+end
+
+local function sAS(ns,fd)
+	if rig~="R6" then return end
+	if aS==ns then return end
+	fd=fd or 0.3
+	local old=aS aS=ns
+	local activeIdleTr=P_OFF.IDLE and iTr or hTdTr
+	local activeIdleOff=P_OFF.IDLE or OFF.H2
+	local stops={idle=activeIdleTr,fly=fTr,boost1=boTr,boost2=sTr,hover=hTdTr,hoverTouchdown=hTdTr,glide=gTr,hardland=hlTr}
+	local s=stops[old]
+	if s and s.IsPlaying then s:Stop(fd) end
+	if ns=="idle" then hld(activeIdleTr,activeIdleOff,fd)
+	elseif ns=="fly" then if fTr and not fTr.IsPlaying then fTr:Play(fd) fTr:AdjustSpeed(1) end
+	elseif ns=="boost1" then hld(boTr,OFF.B1,fd)
+	elseif ns=="boost2" then hld(sTr,OFF.B2,fd)
+	elseif ns=="hover" then hld(hTdTr,OFF.H2,fd)
+	elseif ns=="hoverTouchdown" then hld(hTdTr,OFF.H2,fd)
+	elseif ns=="hardland" then hld(hlTr,OFF.LN,fd)
+	end
+end
+
+local dof=Instance.new("DepthOfFieldEffect")
+dof.Name=dNm dof.FarIntensity=1 dof.NearIntensity=0 dof.InFocusRadius=15 dof.Parent=Lighting
+
+local mPt=Instance.new("Part")
+mPt.Name=pNm mPt.Size=Vector3.new(4.5,3.5,0.1) mPt.Transparency=1 mPt.CanCollide=false mPt.Anchored=true mPt.Parent=workspace
+
+local sfG=Instance.new("SurfaceGui")
+sfG.Name=gNm
+sfG.Face=Enum.NormalId.Front sfG.AlwaysOnTop=true sfG.LightInfluence=0
+sfG.ZIndexBehavior=Enum.ZIndexBehavior.Sibling sfG.SizingMode=Enum.SurfaceGuiSizingMode.PixelsPerStud
+sfG.PixelsPerStud=150 sfG.Enabled=true sfG.ResetOnSpawn=false sfG.Adornee=mPt sfG.Parent=tgtP
+
+local mFr=Instance.new("Frame") mFr.Size=UDim2.new(1,0,1,0) mFr.BackgroundTransparency=1 mFr.Parent=sfG
+
+local tC=Instance.new("Frame") tC.Size=UDim2.new(1,0,0,60) tC.BackgroundColor3=Color3.fromRGB(20,20,20) tC.BackgroundTransparency=0.2 tC.Parent=mFr
+local uLL=Instance.new("UIListLayout") uLL.FillDirection=Enum.FillDirection.Horizontal uLL.SortOrder=Enum.SortOrder.LayoutOrder uLL.Parent=tC
+
+local pC=Instance.new("Frame") pC.Size=UDim2.new(1,0,1,-80) pC.Position=UDim2.new(0,0,0,80) pC.BackgroundTransparency=1 pC.Parent=mFr
+
+local tNms={"Main","Presets","Customization","Settings"}
+local pages={} local tBtns={}
+
+local function apT(f)
+	f.BackgroundColor3=Color3.fromRGB(15,15,15) f.BackgroundTransparency=0.3
+	local s=Instance.new("UIStroke") s.Color=Color3.fromRGB(255,255,255) s.Transparency=0.5 s.Thickness=1 s.ApplyStrokeMode=Enum.ApplyStrokeMode.Border s.Parent=f
+	local c=Instance.new("UICorner") c.CornerRadius=UDim.new(0,8) c.Parent=f
+end
+
+for i,name in ipairs(tNms) do
+	local tb=Instance.new("TextButton") tb.Size=UDim2.new(0.25,0,1,0) tb.Text=name tb.Font=Enum.Font.GothamBold tb.TextSize=22 tb.TextColor3=Color3.fromRGB(255,255,255) tb.BackgroundColor3=Color3.fromRGB(35,35,35) tb.Parent=tC tBtns[name]=tb
+	local ts=Instance.new("UIStroke") ts.Color=Color3.fromRGB(255,255,255) ts.Transparency=0.5 ts.Thickness=1 ts.ApplyStrokeMode=Enum.ApplyStrokeMode.Border ts.Parent=tb
+	local pg=Instance.new("Frame") pg.Size=UDim2.new(1,0,1,0) pg.BackgroundTransparency=1 pg.Visible=(i==1) pg.Parent=pC pages[name]=pg
+	if name~="Presets" and name~="Customization" then
+		local bg2=Instance.new("Frame") bg2.Size=UDim2.new(1,0,1,0) bg2.Parent=pg apT(bg2)
+		local lb=Instance.new("TextLabel") lb.Size=UDim2.new(1,0,1,0) lb.BackgroundTransparency=1 lb.Text=name.." Menu" lb.Font=Enum.Font.GothamMedium lb.TextSize=40 lb.TextColor3=Color3.fromRGB(180,180,180) lb.Parent=bg2
+	end
+	tb.MouseButton1Click:Connect(function()
+		pClk()
+		for pn,pf in pairs(pages) do pf.Visible=(pn==name) tBtns[pn].BackgroundColor3=(pn==name) and Color3.fromRGB(80,140,200) or Color3.fromRGB(35,35,35) end
+	end)
+	if i==1 then tb.BackgroundColor3=Color3.fromRGB(80,140,200) end
+end
+
+-- PRESETS PAGE
+local pPg=pages["Presets"]
+local pBox=Instance.new("Frame") pBox.Size=UDim2.new(0.95,0,0.72,0) pBox.Position=UDim2.new(0.025,0,0,0) pBox.BackgroundColor3=Color3.fromRGB(15,15,15) pBox.BackgroundTransparency=0.3 pBox.Parent=pPg
+local bxS=Instance.new("UIStroke") bxS.Color=Color3.fromRGB(255,255,255) bxS.Transparency=0.5 bxS.Thickness=1 bxS.ApplyStrokeMode=Enum.ApplyStrokeMode.Border bxS.Parent=pBox
+Instance.new("UICorner",pBox).CornerRadius=UDim.new(0,8)
+local slC=Instance.new("Frame") slC.Size=UDim2.new(0.95,0,0.9,0) slC.Position=UDim2.new(0.025,0,0.05,0) slC.BackgroundTransparency=1 slC.Parent=pBox
+local slL=Instance.new("UIListLayout") slL.FillDirection=Enum.FillDirection.Horizontal slL.HorizontalAlignment=Enum.HorizontalAlignment.Center slL.VerticalAlignment=Enum.VerticalAlignment.Center slL.Padding=UDim.new(0,20) slL.Parent=slC
+
+local pID={
+	[1]={fn="preset_invincible_mark.webp",url="https://raw.githubusercontent.com/alexanderhensworth-dev/Viltrum.229293939-9-3-.-/refs/heads/main/Invincible-Deiucfg-5391ce1e-432c-4743-8d94-8f116bbb1f20.webp"},
+	[2]={fn="preset_omni_man.webp",url="https://raw.githubusercontent.com/alexanderhensworth-dev/Viltrum.229293939-9-3-.-/refs/heads/main/Omni-ManProfile.webp"},
+	[3]={fn="preset_atom_eve.webp",url="https://raw.githubusercontent.com/alexanderhensworth-dev/Viltrum.229293939-9-3-.-/refs/heads/main/Atom-EveProfile.webp"},
+	[4]={fn="preset_conquest.webp",url="https://raw.githubusercontent.com/alexanderhensworth-dev/Viltrum.229293939-9-3-.-/refs/heads/main/Viltrumite_Conquest.webp"},
+	[5]={fn="preset_thragg.webp",url="https://raw.githubusercontent.com/alexanderhensworth-dev/Viltrum.229293939-9-3-.-/refs/heads/main/Thragg-TV.webp"},
+	[6]={fn="preset_anissa.webp",url="https://raw.githubusercontent.com/alexanderhensworth-dev/Viltrum.229293939-9-3-.-/refs/heads/main/Viltrumite_Anissa.webp"},
+	[7]={fn="preset_hero_var_1.webp",url="https://raw.githubusercontent.com/alexanderhensworth-dev/Viltrum.229293939-9-3-.-/refs/heads/main/Viltrumitemarkrender%20(1).webp"},
+	[8]={fn="preset_hero_var_2.webp",url="https://raw.githubusercontent.com/alexanderhensworth-dev/Viltrum.229293939-9-3-.-/refs/heads/main/MohawkMark.webp"},
+	[9]={fn="preset_hero_var_3.webp",url="https://raw.githubusercontent.com/alexanderhensworth-dev/Viltrum.229293939-9-3-.-/refs/heads/main/InvincibleFuture.webp"},
+}
+local sD={{Name="Earth Heros",Cards={1,2,3}},{Name="The dying species",Cards={4,5,6}},{Name="A Hero's Variant",Cards={7,8,9}}}
+local cSec=1 local cObjs={}
+
+local function clrC() for _,c in ipairs(cObjs) do c:Destroy() end cObjs={} end
+
+local function mkC(n)
+	local cd=Instance.new("Frame") cd.Size=UDim2.new(0.31,0,0.9,0) cd.BackgroundColor3=Color3.fromRGB(40,40,40) cd.BackgroundTransparency=0.3 cd.Parent=slC table.insert(cObjs,cd)
+	local cs=Instance.new("UIStroke") cs.Color=Color3.fromRGB(255,255,255) cs.Transparency=0.5 cs.Thickness=1 cs.ApplyStrokeMode=Enum.ApplyStrokeMode.Border cs.Parent=cd
+	Instance.new("UICorner",cd).CornerRadius=UDim.new(0,8)
+	local il=Instance.new("ImageLabel") il.Size=UDim2.new(1,0,1,0) il.BackgroundColor3=Color3.fromRGB(25,25,25) il.BackgroundTransparency=0.4 il.ScaleType=Enum.ScaleType.Fit il.Parent=cd
+	Instance.new("UICorner",il).CornerRadius=UDim.new(0,8)
+	local d=pID[n]
+	if d then task.spawn(function()
+		if writefile and getcustomasset and game.HttpGet then
+			local ok,data=pcall(function() return game:HttpGet(d.url) end)
+			if ok and data then writefile(d.fn,data) il.Image=getcustomasset(d.fn) end
+		end
+	end) end
+	local presetNum=((n-1)%3)+1
+	local tl=Instance.new("TextLabel") tl.Size=UDim2.new(1,0,0,35) tl.Position=UDim2.new(0,0,1,-35) tl.BackgroundTransparency=0.5 tl.BackgroundColor3=Color3.fromRGB(0,0,0) tl.TextColor3=Color3.fromRGB(255,255,255) tl.Font=Enum.Font.GothamMedium tl.TextSize=18 tl.Text="PRESET "..presetNum tl.Parent=cd
+	Instance.new("UICorner",tl).CornerRadius=UDim.new(0,8)
+	local btn=Instance.new("TextButton") btn.Size=UDim2.new(1,0,1,0) btn.BackgroundTransparency=1 btn.Text="" btn.Parent=cd
+	btn.MouseButton1Click:Connect(function()
+		pClk()
+		local pData=PRESET_ANIM_DATA[n]
+		if not pData or not pData[rig] then
+			game:GetService("StarterGui"):SetCore("SendNotification",{Title="Preset System",Text="This preset doesn't support "..rig,Duration=3})
+			return
+		end
+		local freshAIDS={}
+		for k,v in pairs(DEFAULT_AIDS[rig]) do freshAIDS[k]=v end
+		AIDS[rig]=freshAIDS
+		for k,v in pairs(DEFAULT_OFF) do OFF[k]=v end
+		P_OFF={}
+		for k,v in pairs(pData[rig]) do
+			if k:match("_TIME") then P_OFF[k:gsub("_TIME","")]=v else AIDS[rig][k]=v end
+		end
+		for _,t in ipairs({fTr,iTr,gTr,boTr,sTr,hTr,hlTr,cgTr,hTdTr,hLndTr}) do if t and t.IsPlaying then t:Stop() end end
+		ldA()
+		game:GetService("StarterGui"):SetCore("SendNotification",{Title="Preset System",Text="Preset "..presetNum.." applied!",Duration=2})
+	end)
+end
+
+local function rndS() clrC() for _,n in ipairs(sD[cSec].Cards) do mkC(n) end end
+
+local bN=Instance.new("Frame") bN.Size=UDim2.new(0.95,0,0.15,0) bN.Position=UDim2.new(0.025,0,0.78,0) bN.BackgroundTransparency=1 bN.Parent=pPg
+local nL=Instance.new("UIListLayout") nL.FillDirection=Enum.FillDirection.Horizontal nL.HorizontalAlignment=Enum.HorizontalAlignment.Center nL.VerticalAlignment=Enum.VerticalAlignment.Center nL.SortOrder=Enum.SortOrder.LayoutOrder nL.Padding=UDim.new(0,15) nL.Parent=bN
+
+local function mkNB(t,lo)
+	local b=Instance.new("TextButton") b.Size=UDim2.new(0,45,0,45) b.BackgroundColor3=Color3.fromRGB(15,15,15) b.BackgroundTransparency=0.3 b.Text=t b.TextColor3=Color3.fromRGB(255,255,255) b.Font=Enum.Font.GothamMedium b.TextSize=22 b.LayoutOrder=lo
+	local s=Instance.new("UIStroke") s.Color=Color3.fromRGB(255,255,255) s.Transparency=0.5 s.Thickness=1 s.ApplyStrokeMode=Enum.ApplyStrokeMode.Border s.Parent=b
+	Instance.new("UICorner",b).CornerRadius=UDim.new(0,8)
+	return b
+end
+
+local bLA=mkNB("<",1) bLA.Parent=bN
+local sLb=Instance.new("TextLabel") sLb.Size=UDim2.new(0,250,0,45) sLb.BackgroundColor3=Color3.fromRGB(15,15,15) sLb.BackgroundTransparency=0.3 sLb.Text=sD[cSec].Name sLb.TextColor3=Color3.fromRGB(255,255,255) sLb.Font=Enum.Font.GothamMedium sLb.TextSize=20 sLb.LayoutOrder=2 sLb.Parent=bN
+local sLS=Instance.new("UIStroke") sLS.Color=Color3.fromRGB(255,255,255) sLS.Transparency=0.5 sLS.Thickness=1 sLS.ApplyStrokeMode=Enum.ApplyStrokeMode.Border sLS.Parent=sLb
+Instance.new("UICorner",sLb).CornerRadius=UDim.new(0,8)
+local bRA=mkNB(">",3) bRA.Parent=bN
+
+local function uN(d) pClk() cSec=cSec+d if cSec>#sD then cSec=1 elseif cSec<1 then cSec=#sD end sLb.Text=sD[cSec].Name rndS() end
+bLA.MouseButton1Click:Connect(function() uN(-1) end)
+bRA.MouseButton1Click:Connect(function() uN(1) end)
+rndS()
+
+-- CUSTOMIZATION PAGE
+local cPg=pages["Customization"]
+local cLL=Instance.new("UIListLayout") cLL.FillDirection=Enum.FillDirection.Vertical cLL.SortOrder=Enum.SortOrder.LayoutOrder cLL.Padding=UDim.new(0,15) cLL.HorizontalAlignment=Enum.HorizontalAlignment.Center cLL.Parent=cPg
+local cPd=Instance.new("UIPadding") cPd.PaddingTop=UDim.new(0,20) cPd.Parent=cPg
+
+local function mkCS(tt,lo,eh)
+	local sc=Instance.new("Frame") sc.Size=UDim2.new(0.95,0,0,50) sc.BackgroundColor3=Color3.fromRGB(15,15,15) sc.BackgroundTransparency=0.3 sc.ClipsDescendants=true sc.LayoutOrder=lo sc.Parent=cPg
+	local s=Instance.new("UIStroke") s.Color=Color3.fromRGB(255,255,255) s.Transparency=0.5 s.Thickness=1 s.ApplyStrokeMode=Enum.ApplyStrokeMode.Border s.Parent=sc
+	Instance.new("UICorner",sc).CornerRadius=UDim.new(0,8)
+	local hb=Instance.new("TextButton") hb.Size=UDim2.new(1,0,0,50) hb.BackgroundTransparency=1 hb.Text="" hb.Parent=sc
+	local tl=Instance.new("TextLabel") tl.Size=UDim2.new(1,-60,1,0) tl.Position=UDim2.new(0,20,0,0) tl.BackgroundTransparency=1 tl.Text=tt tl.TextColor3=Color3.fromRGB(255,255,255) tl.Font=Enum.Font.GothamMedium tl.TextSize=22 tl.TextXAlignment=Enum.TextXAlignment.Left tl.Parent=hb
+	local al=Instance.new("TextLabel") al.Size=UDim2.new(0,50,0,50) al.Position=UDim2.new(1,-50,0,0) al.BackgroundTransparency=1 al.Text="▼" al.TextColor3=Color3.fromRGB(255,255,255) al.Font=Enum.Font.GothamMedium al.TextSize=20 al.Parent=hb
+	local ca=Instance.new("Frame") ca.Size=UDim2.new(1,0,1,-50) ca.Position=UDim2.new(0,0,0,50) ca.BackgroundTransparency=1 ca.Parent=sc
+	if tt~="Avatar Editor" and tt~="Animation Changer" then
+		local pl=Instance.new("TextLabel") pl.Size=UDim2.new(1,0,1,0) pl.BackgroundTransparency=1 pl.Text=tt.." Content Area" pl.TextColor3=Color3.fromRGB(150,150,150) pl.Font=Enum.Font.GothamMedium pl.TextSize=18 pl.Parent=ca
+	end
+	local ie=false
+	local cs2=UDim2.new(0.95,0,0,50) local es=UDim2.new(0.95,0,0,eh or 250)
+	local ti=TweenInfo.new(0.3,Enum.EasingStyle.Quart,Enum.EasingDirection.Out)
+	hb.MouseButton1Click:Connect(function()
+		pClk()
+		ie=not ie al.Text=ie and "▲" or "▼"
+		TS:Create(sc,ti,{Size=ie and es or cs2}):Play()
+	end)
+	return ca,hb
+end
+
+local aeC,aeB=mkCS("Avatar Editor",1,400)
+local acC,acB=mkCS("Animation Changer",2,420)
+mkCS("Cus 3",3)
+
+-- AVATAR EDITOR INTERNALS
+local lPn=Instance.new("Frame") lPn.Size=UDim2.new(0.68,0,1,-10) lPn.Position=UDim2.new(0.01,0,0,5) lPn.BackgroundTransparency=1 lPn.Parent=aeC
+local rPn=Instance.new("Frame") rPn.Size=UDim2.new(0.29,0,1,-10) rPn.Position=UDim2.new(0.70,0,0,5) rPn.BackgroundColor3=Color3.fromRGB(20,20,20) rPn.BackgroundTransparency=0.3 rPn.Parent=aeC
+Instance.new("UICorner",rPn).CornerRadius=UDim.new(0,8) Instance.new("UIStroke",rPn).Color=Color3.fromRGB(150,150,150)
+local tFr=Instance.new("ScrollingFrame") tFr.Size=UDim2.new(1,0,0,30) tFr.BackgroundTransparency=1 tFr.ScrollBarThickness=0 tFr.CanvasSize=UDim2.new(0,0,0,0) tFr.Parent=lPn
+local tFL=Instance.new("UIListLayout") tFL.FillDirection=Enum.FillDirection.Horizontal tFL.SortOrder=Enum.SortOrder.LayoutOrder tFL.Padding=UDim.new(0,6) tFL.Parent=tFr
+tFL:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function() tFr.CanvasSize=UDim2.new(0,tFL.AbsoluteContentSize.X+10,0,0) end)
+local sBx=Instance.new("TextBox") sBx.Size=UDim2.new(1,0,0,30) sBx.Position=UDim2.new(0,0,0,35) sBx.PlaceholderText="Search avatar marketplace..." sBx.Text="" sBx.TextColor3=Color3.new(1,1,1) sBx.BackgroundColor3=Color3.fromRGB(35,35,35) sBx.Parent=lPn Instance.new("UICorner",sBx).CornerRadius=UDim.new(0,5)
+local scFr=Instance.new("ScrollingFrame") scFr.Size=UDim2.new(1,0,1,-75) scFr.Position=UDim2.new(0,0,0,70) scFr.CanvasSize=UDim2.new(0,0,0,0) scFr.ScrollBarThickness=6 scFr.BackgroundTransparency=1 scFr.Parent=lPn
+local grd=Instance.new("UIGridLayout") grd.CellSize=UDim2.new(0,95,0,130) grd.CellPadding=UDim2.new(0,8,0,8) grd.Parent=scFr
+local wTl=Instance.new("TextLabel") wTl.Size=UDim2.new(1,0,0,30) wTl.BackgroundTransparency=1 wTl.Text="Currently Worn" wTl.TextColor3=Color3.new(1,1,1) wTl.Font=Enum.Font.GothamMedium wTl.TextSize=16 wTl.Parent=rPn
+local wSc=Instance.new("ScrollingFrame") wSc.Size=UDim2.new(1,-10,1,-35) wSc.Position=UDim2.new(0,5,0,30) wSc.CanvasSize=UDim2.new(0,0,0,0) wSc.ScrollBarThickness=4 wSc.BackgroundTransparency=1 wSc.Parent=rPn
+local wL=Instance.new("UIGridLayout") wL.CellSize=UDim2.new(0,75,0,75) wL.CellPadding=UDim2.new(0,8,0,8) wL.SortOrder=Enum.SortOrder.LayoutOrder wL.Parent=wSc
+
+local curPg=nil local ldI=false local curSr="" local curAT={}
+
+local function uW()
+	for _,v in ipairs(wSc:GetChildren()) do if v:IsA("Frame") then v:Destroy() end end
+	local c=plr.Character if not c then return end
+	for _,item in ipairs(c:GetChildren()) do
+		if item:IsA("Accessory") or item:IsA("Shirt") or item:IsA("Pants") or item:IsA("ShirtGraphic") then
+			local aid=item:GetAttribute("AssetID")
+			local row=Instance.new("Frame") row.BackgroundColor3=Color3.fromRGB(35,35,35) row.Parent=wSc Instance.new("UICorner",row).CornerRadius=UDim.new(0,5)
+			local img=Instance.new("ImageLabel") img.Size=UDim2.new(1,0,1,0) img.BackgroundTransparency=1 img.Parent=row Instance.new("UICorner",img).CornerRadius=UDim.new(0,5)
+			if aid then img.Image="https://www.roblox.com/asset-thumbnail/image?assetId="..tostring(aid).."&width=420&height=420&format=png"
+			else if item:IsA("Shirt") then img.Image=item.ShirtTemplate elseif item:IsA("Pants") then img.Image=item.PantsTemplate elseif item:IsA("ShirtGraphic") then img.Image=item.Graphic end end
+			local xB=Instance.new("TextButton") xB.Size=UDim2.new(0,24,0,24) xB.Position=UDim2.new(1,-24,0,0) xB.BackgroundColor3=Color3.fromRGB(200,50,50) xB.TextColor3=Color3.new(1,1,1) xB.Text="X" xB.Font=Enum.Font.GothamMedium xB.TextScaled=true xB.Parent=row Instance.new("UICorner",xB).CornerRadius=UDim.new(0,5)
+			xB.MouseButton1Click:Connect(function() pClk() if aid then _G.PWI[aid]=nil end item:Destroy() uW() end)
+		end
+	end
+	wSc.CanvasSize=UDim2.new(0,0,0,wL.AbsoluteContentSize.Y+10)
+end
+
+aeB.MouseButton1Click:Connect(uW)
+
+local function wAc(aid)
+	local c=plr.Character if not c then return end
+	local h=c:FindFirstChildOfClass("Humanoid") if not h then return end
+	for _,ch in ipairs(c:GetChildren()) do if ch:GetAttribute("AssetID")==aid then return end end
+	local ok,objs=pcall(function() return game:GetObjects("rbxassetid://"..tostring(aid)) end)
+	if not ok or not objs or #objs==0 then return end
+	for _,w in ipairs(objs) do
+		local ts={}
+		if w:IsA("Model") and w.Name=="Model" then ts=w:GetChildren() else table.insert(ts,w) end
+		for _,obj in ipairs(ts) do
+			local em=c:FindFirstChild(obj.Name)
+			if em and em:GetAttribute("AssetID")==aid then em:Destroy() end
+			obj:SetAttribute("AssetID",aid)
+			if obj:IsA("Accessory") then
+				local cl=obj:Clone() cl.Parent=c h:AddAccessory(cl)
+				local hdl=cl:FindFirstChild("Handle")
+				if hdl and hdl:IsA("BasePart") then
+					hdl.CanCollide=false
+					local at=hdl:FindFirstChildOfClass("Attachment")
+					local tp=c:FindFirstChild("Head")
+					if at then for _,l in ipairs(c:GetChildren()) do if l:IsA("BasePart") and l:FindFirstChild(at.Name) then tp=l break end end end
+					if tp then
+						local ta=tp:FindFirstChild(at and at.Name or "")
+						local wd=hdl:FindFirstChild("AccessoryWeld") or Instance.new("Weld")
+						wd.Name="AccessoryWeld" wd.Part0=hdl wd.Part1=tp
+						if at and ta then wd.C0=at.CFrame wd.C1=ta.CFrame else wd.C0=CFrame.new(0,0,0) end
+						wd.Parent=hdl
+					end
+				end
+			elseif obj:IsA("Shirt") or obj:IsA("Pants") or obj:IsA("ShirtGraphic") then
+				local it=c:FindFirstChildOfClass(obj.ClassName) if it then it:Destroy() end
+				obj:Clone().Parent=c
+			end
+		end
+		w:Destroy()
+	end
+	_G.PWI[aid]=true uW()
+end
+
+grd:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function() scFr.CanvasSize=UDim2.new(0,0,0,grd.AbsoluteContentSize.Y+20) end)
+
+local function mkIt(item)
+	local fr=Instance.new("Frame") fr.BackgroundColor3=Color3.fromRGB(30,30,30) fr.Parent=scFr Instance.new("UICorner",fr).CornerRadius=UDim.new(0,8)
+	local aid=item.Id
+	local im=Instance.new("ImageLabel") im.Size=UDim2.new(1,-10,0,65) im.Position=UDim2.new(0,5,0,5) im.BackgroundTransparency=1 im.Parent=fr im.Image="https://www.roblox.com/asset-thumbnail/image?assetId="..tostring(aid).."&width=420&height=420&format=png"
+	local nm=Instance.new("TextLabel") nm.Size=UDim2.new(1,-10,0,25) nm.Position=UDim2.new(0,5,0,72) nm.BackgroundTransparency=1 nm.TextWrapped=true nm.TextScaled=true nm.Font=Enum.Font.Gotham nm.TextColor3=Color3.new(1,1,1) nm.Text=item.Name or "Unknown Item" nm.Parent=fr
+	local wb=Instance.new("TextButton") wb.Size=UDim2.new(1,-10,0,25) wb.Position=UDim2.new(0,5,1,-30) wb.BackgroundColor3=Color3.new(0,0,0) wb.BackgroundTransparency=0.8 wb.TextColor3=Color3.new(1,1,1) wb.TextScaled=true wb.Font=Enum.Font.Oswald wb.Text="Wear" wb.Parent=fr Instance.new("UICorner",wb).CornerRadius=UDim.new(0,4)
+	wb.MouseButton1Click:Connect(function() pClk() wAc(aid) end)
+end
+
+local function clrG() for _,v in ipairs(scFr:GetChildren()) do if v:IsA("Frame") then v:Destroy() end end end
+
+local function ldIt()
+	if ldI then return end ldI=true
+	if not curPg then
+		local sp=CatalogSearchParams.new() sp.AssetTypes=curAT sp.Limit=30 sp.SortType=Enum.CatalogSortType.Relevance
+		if curSr~="" then sp.SearchKeyword=curSr end
+		local ok,res=pcall(function() return AES:SearchCatalog(sp) end)
+		if ok and res then curPg=res for _,item in ipairs(curPg:GetCurrentPage()) do mkIt(item) end end
+	else
+		if not curPg.IsFinished then
+			local ok=pcall(function() curPg:AdvanceToNextPageAsync() end)
+			if ok then for _,item in ipairs(curPg:GetCurrentPage()) do mkIt(item) end end
+		end
+	end
+	ldI=false
+end
+
+local function mkTb(name,at,ord)
+	local b=Instance.new("TextButton") b.Size=UDim2.new(0,95,1,0) b.BackgroundColor3=Color3.fromRGB(40,40,40) b.TextColor3=Color3.new(1,1,1) b.Text=name b.TextSize=11 b.Font=Enum.Font.GothamMedium b.LayoutOrder=ord b.Parent=tFr Instance.new("UICorner",b)
+	b.MouseButton1Click:Connect(function() pClk() curAT=at curPg=nil clrG() ldIt() end)
+end
+
+local cats={
+	{name="Clothing",at={Enum.AvatarAssetType.Shirt,Enum.AvatarAssetType.Pants,Enum.AvatarAssetType.TShirt,Enum.AvatarAssetType.ShirtAccessory,Enum.AvatarAssetType.PantsAccessory,Enum.AvatarAssetType.TShirtAccessory,Enum.AvatarAssetType.JacketAccessory,Enum.AvatarAssetType.SweaterAccessory,Enum.AvatarAssetType.ShortsAccessory,Enum.AvatarAssetType.DressSkirtAccessory}},
+	{name="Accessories",at={Enum.AvatarAssetType.Hat,Enum.AvatarAssetType.FaceAccessory,Enum.AvatarAssetType.NeckAccessory,Enum.AvatarAssetType.ShoulderAccessory,Enum.AvatarAssetType.FrontAccessory,Enum.AvatarAssetType.BackAccessory,Enum.AvatarAssetType.WaistAccessory}},
+	{name="Hair",at={Enum.AvatarAssetType.HairAccessory}},
+}
+curAT=cats[1].at
+for oi,od in ipairs(cats) do mkTb(od.name,od.at,oi) end
+
+sBx.FocusLost:Connect(function(ep) if not ep then return end curSr=sBx.Text curPg=nil clrG() ldIt() end)
+scFr:GetPropertyChangedSignal("CanvasPosition"):Connect(function()
+	local mx=scFr.CanvasSize.Y.Offset-scFr.AbsoluteSize.Y
+	if scFr.CanvasPosition.Y>mx-150 then if curPg and not curPg.IsFinished then ldIt() end end
+end)
+ldIt()
+
+-- ANIMATION CHANGER INTERNALS
+local acSelId=nil
+local acSelName=""
+local acCurTrk=nil
+
+local function acMkBtn(txt,par)
+	local b=Instance.new("TextButton") b.Size=UDim2.new(0,52,0,22) b.BackgroundColor3=Color3.new(0,0,0) b.BackgroundTransparency=0.8 b.TextColor3=Color3.new(1,1,1) b.Font=Enum.Font.Oswald b.TextScaled=true b.Text=txt b.Parent=par Instance.new("UICorner",b).CornerRadius=UDim.new(0,5) return b
+end
+
+local function acPlayAnim(assetId)
+	local c=plr.Character if not c then return end
+	local h=c:FindFirstChildOfClass("Humanoid") if not h then return end
+	local an=h:FindFirstChildOfClass("Animator") if not an then return end
+	if acCurTrk and acCurTrk.IsPlaying then acCurTrk:Stop(0.2) end
+	task.spawn(function()
+		local ok,objs=pcall(function() return game:GetObjects("rbxassetid://"..tostring(assetId)) end)
+		if ok and objs then
+			local foundAnim=nil
+			for _,obj in ipairs(objs) do
+				if obj:IsA("Animation") then foundAnim=obj break end
+				if obj:IsA("Folder") or obj:IsA("Model") then foundAnim=obj:FindFirstChildWhichIsA("Animation",true) if foundAnim then break end end
+			end
+			if foundAnim then local trk=an:LoadAnimation(foundAnim) trk.Priority=Enum.AnimationPriority.Action4 trk:Play() acCurTrk=trk return end
+		end
+		local animObj=Instance.new("Animation") animObj.AnimationId="rbxassetid://"..tostring(assetId)
+		local trk=an:LoadAnimation(animObj) trk.Priority=Enum.AnimationPriority.Action4 trk:Play() acCurTrk=trk
+	end)
+end
+
+local acTopBar=Instance.new("Frame") acTopBar.Size=UDim2.new(1,0,0,32) acTopBar.Position=UDim2.new(0,0,0,4) acTopBar.BackgroundTransparency=1 acTopBar.Parent=acC
+local acSrBox=Instance.new("TextBox") acSrBox.Size=UDim2.new(0.55,0,1,0) acSrBox.PlaceholderText="Search emotes..." acSrBox.Text="" acSrBox.TextColor3=Color3.new(1,1,1) acSrBox.BackgroundColor3=Color3.fromRGB(10,10,10) acSrBox.BackgroundTransparency=0.35 acSrBox.ClearTextOnFocus=false acSrBox.Font=Enum.Font.Oswald acSrBox.TextScaled=true acSrBox.Parent=acTopBar
+local acSrStroke=Instance.new("UIStroke") acSrStroke.Color=Color3.new(1,1,1) acSrStroke.Transparency=0.5 acSrStroke.Thickness=1 acSrStroke.ApplyStrokeMode=Enum.ApplyStrokeMode.Border acSrStroke.Parent=acSrBox
+Instance.new("UICorner",acSrBox).CornerRadius=UDim.new(0,5)
+local acSelLbl=Instance.new("TextLabel") acSelLbl.Size=UDim2.new(0.43,0,1,0) acSelLbl.Position=UDim2.new(0.57,0,0,0) acSelLbl.BackgroundColor3=Color3.fromRGB(10,10,10) acSelLbl.BackgroundTransparency=0.35 acSelLbl.TextColor3=Color3.fromRGB(200,200,200) acSelLbl.Font=Enum.Font.Oswald acSelLbl.TextScaled=true acSelLbl.TextXAlignment=Enum.TextXAlignment.Left acSelLbl.Text=" None selected" acSelLbl.TextTruncate=Enum.TextTruncate.AtEnd acSelLbl.Parent=acTopBar
+local acSlStroke=Instance.new("UIStroke") acSlStroke.Color=Color3.new(1,1,1) acSlStroke.Transparency=0.5 acSlStroke.Thickness=1 acSlStroke.ApplyStrokeMode=Enum.ApplyStrokeMode.Border acSlStroke.Parent=acSelLbl
+Instance.new("UICorner",acSelLbl).CornerRadius=UDim.new(0,5)
+local acActRow=Instance.new("Frame") acActRow.Size=UDim2.new(1,0,0,26) acActRow.Position=UDim2.new(0,0,0,40) acActRow.BackgroundTransparency=1 acActRow.Parent=acC
+local acActLL=Instance.new("UIListLayout") acActLL.FillDirection=Enum.FillDirection.Horizontal acActLL.VerticalAlignment=Enum.VerticalAlignment.Center acActLL.Padding=UDim.new(0,8) acActLL.Parent=acActRow
+local acSelBtn=acMkBtn("Select",acActRow) acSelBtn.Size=UDim2.new(0,70,1,0)
+local acPlayBtn=acMkBtn("Play",acActRow) acPlayBtn.Size=UDim2.new(0,70,1,0)
+local acStopBtn=acMkBtn("Stop",acActRow) acStopBtn.Size=UDim2.new(0,70,1,0)
+local acRes=Instance.new("ScrollingFrame") acRes.Size=UDim2.new(1,0,1,-72) acRes.Position=UDim2.new(0,0,0,70) acRes.CanvasSize=UDim2.new(0,0,0,0) acRes.ScrollBarThickness=4 acRes.BackgroundTransparency=1 acRes.Parent=acC
+local acGrid=Instance.new("UIGridLayout") acGrid.CellSize=UDim2.new(0.18,0,0,85) acGrid.CellPadding=UDim2.new(0.01,0,0,6) acGrid.SortOrder=Enum.SortOrder.LayoutOrder acGrid.Parent=acRes
+acGrid:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function() acRes.CanvasSize=UDim2.new(0,0,0,acGrid.AbsoluteContentSize.Y+10) end)
+
+local acHighlight=nil
+local function acClearCards() for _,v in ipairs(acRes:GetChildren()) do if v:IsA("Frame") then v:Destroy() end end acHighlight=nil end
+
+local function acMkCard(data)
+	local fr=Instance.new("Frame") fr.BackgroundColor3=Color3.fromRGB(10,10,10) fr.BackgroundTransparency=0.35 fr.Parent=acRes
+	local sk=Instance.new("UIStroke") sk.Color=Color3.new(1,1,1) sk.Transparency=0.5 sk.Thickness=1 sk.ApplyStrokeMode=Enum.ApplyStrokeMode.Border sk.Parent=fr
+	Instance.new("UICorner",fr).CornerRadius=UDim.new(0,6)
+	local thumb=Instance.new("ImageLabel") thumb.Size=UDim2.new(1,-4,0,55) thumb.Position=UDim2.new(0,2,0,2) thumb.BackgroundTransparency=1 thumb.Image=("https://www.roblox.com/asset-thumbnail/image?assetId=%s&width=420&height=420&format=png"):format(data.id) thumb.Parent=fr
+	local nm=Instance.new("TextLabel") nm.Size=UDim2.new(1,0,0,22) nm.Position=UDim2.new(0,0,1,-22) nm.BackgroundTransparency=1 nm.TextColor3=Color3.new(1,1,1) nm.Font=Enum.Font.Oswald nm.TextScaled=true nm.TextTruncate=Enum.TextTruncate.AtEnd nm.Text=data.name nm.Parent=fr
+	local btn=Instance.new("TextButton") btn.Size=UDim2.new(1,0,1,0) btn.BackgroundTransparency=1 btn.Text="" btn.Parent=fr
+	btn.MouseButton1Click:Connect(function()
+		pClk()
+		if acHighlight and acHighlight.Parent then
+			acHighlight.BackgroundColor3=Color3.fromRGB(10,10,10) acHighlight.BackgroundTransparency=0.35
+			local ost=acHighlight:FindFirstChildOfClass("UIStroke") if ost then ost.Color=Color3.new(1,1,1) ost.Transparency=0.5 end
+		end
+		fr.BackgroundColor3=Color3.fromRGB(30,90,180) fr.BackgroundTransparency=0.15 sk.Color=Color3.fromRGB(120,180,255) sk.Transparency=0.1
+		acHighlight=fr acSelId=data.id acSelName=data.name acSelLbl.Text=" "..data.name
+	end)
+end
+
+local function acPopulate(decoded)
+	acClearCards()
+	if decoded and decoded.data then for _,item in ipairs(decoded.data) do acMkCard({id=item.id,name=item.name}) end end
+end
+
+local function acSearch(q)
+	local url="https://catalog.roblox.com/v1/search/items/details?Category=12&Subcategory=39&Limit=30&Keyword="..HS:UrlEncode(q)
+	local ok,resp=pcall(function() return game:HttpGet(url) end)
+	if not ok then return end acPopulate(HS:JSONDecode(resp))
+end
+
+local function acLoadPop()
+	local ok,resp=pcall(function() return game:HttpGet("https://catalog.roblox.com/v1/search/items/details?Category=12&Subcategory=39&Limit=30&SortType=3") end)
+	if not ok then return end acPopulate(HS:JSONDecode(resp))
+end
+
+-- CARD MENU INTEGRATION
+local cM_pt=Instance.new("Part") cM_pt.Name="CardMenuBrd" cM_pt.Size=Vector3.new(16,9,0.1) cM_pt.Anchored=true cM_pt.CanCollide=false cM_pt.Transparency=1 cM_pt.Parent=workspace
+local cM_gui=Instance.new("SurfaceGui") cM_gui.Face=Enum.NormalId.Back cM_gui.SizingMode=Enum.SurfaceGuiSizingMode.PixelsPerStud cM_gui.PixelsPerStud=100 cM_gui.CanvasSize=Vector2.new(1600,900) cM_gui.AlwaysOnTop=true cM_gui.LightInfluence=0 cM_gui.Adornee=cM_pt cM_gui.Enabled=false cM_gui.Parent=tgtP
+local cM_oPt=Instance.new("Part") cM_oPt.Size=Vector3.new(40,23,0.1) cM_oPt.Anchored=true cM_oPt.CanCollide=false cM_oPt.Transparency=1 cM_oPt.Parent=workspace
+local cM_oGui=Instance.new("SurfaceGui") cM_oGui.Face=Enum.NormalId.Back cM_oGui.SizingMode=Enum.SurfaceGuiSizingMode.PixelsPerStud cM_oGui.PixelsPerStud=100 cM_oGui.AlwaysOnTop=true cM_oGui.LightInfluence=0 cM_oGui.Adornee=cM_oPt cM_oGui.Parent=tgtP
+local cM_ovl=Instance.new("Frame") cM_ovl.Size=UDim2.fromScale(1,1) cM_ovl.BackgroundColor3=Color3.new(0,0,0) cM_ovl.BackgroundTransparency=1 cM_ovl.Visible=false cM_ovl.Parent=cM_oGui
+local cM_pPt=Instance.new("Part") cM_pPt.Size=Vector3.new(16,9,0.1) cM_pPt.Anchored=true cM_pPt.CanCollide=false cM_pPt.Transparency=1 cM_pPt.Parent=workspace
+local cM_pGui=Instance.new("SurfaceGui") cM_pGui.Face=Enum.NormalId.Back cM_pGui.SizingMode=Enum.SurfaceGuiSizingMode.PixelsPerStud cM_pGui.PixelsPerStud=100 cM_pGui.CanvasSize=Vector2.new(1600,900) cM_pGui.AlwaysOnTop=true cM_pGui.LightInfluence=0 cM_pGui.Adornee=cM_pPt cM_pGui.Parent=tgtP
+
+local bEff=Instance.new("BlurEffect") bEff.Size=0 bEff.Parent=cam
+local bIn=TS:Create(bEff,TweenInfo.new(0.4),{Size=16})
+local bOut=TS:Create(bEff,TweenInfo.new(0.4),{Size=0})
+
+local cM_pop=Instance.new("Frame") cM_pop.Size=UDim2.fromOffset(520,320) cM_pop.Position=UDim2.fromOffset(540,290) cM_pop.BackgroundColor3=Color3.fromRGB(20,20,20) cM_pop.BackgroundTransparency=0.2 cM_pop.Visible=false cM_pop.Parent=cM_pGui
+local pStk=Instance.new("UIStroke") pStk.Color=Color3.new(1,1,1) pStk.Thickness=2 pStk.ApplyStrokeMode=Enum.ApplyStrokeMode.Border pStk.Parent=cM_pop
+local pHead=Instance.new("TextLabel") pHead.Size=UDim2.fromOffset(460,28) pHead.Position=UDim2.fromOffset(14,12) pHead.BackgroundTransparency=1 pHead.Text="Change Animation Slot" pHead.TextColor3=Color3.new(1,1,1) pHead.Font=Enum.Font.Code pHead.TextSize=16 pHead.TextXAlignment=Enum.TextXAlignment.Left pHead.Parent=cM_pop
+local pSub=Instance.new("TextLabel") pSub.Size=UDim2.fromOffset(460,18) pSub.Position=UDim2.fromOffset(14,38) pSub.BackgroundTransparency=1 pSub.Text="Select a slot below to assign an animation" pSub.TextColor3=Color3.fromRGB(160,160,160) pSub.Font=Enum.Font.Code pSub.TextSize=11 pSub.TextXAlignment=Enum.TextXAlignment.Left pSub.Parent=cM_pop
+local pDiv=Instance.new("Frame") pDiv.Size=UDim2.fromOffset(492,1) pDiv.Position=UDim2.fromOffset(14,62) pDiv.BackgroundColor3=Color3.new(1,1,1) pDiv.BackgroundTransparency=0.6 pDiv.BorderSizePixel=0 pDiv.Parent=cM_pop
+
+local cX=0 local cY=0 local pLX=0 local pLY=0 local popOpn=false
+
+local function clsPop()
+	pClk() popOpn=false bOut:Play()
+	TS:Create(cM_ovl,TweenInfo.new(0.4),{BackgroundTransparency=1}):Play()
+	task.delay(0.4,function() cM_pop.Visible=false cM_ovl.Visible=false end)
+end
+
+local pClsBtn=Instance.new("ImageButton") pClsBtn.Size=UDim2.fromOffset(28,28) pClsBtn.Position=UDim2.fromOffset(486,6) pClsBtn.BackgroundTransparency=1 pClsBtn.Parent=cM_pop
+if ast.X then pClsBtn.Image=ast.X pClsBtn.ImageColor3=Color3.new(1,1,1) else pClsBtn.Image="" end
+pClsBtn.MouseButton1Click:Connect(clsPop)
+
+local actSlots={}
+local function opnPop(typ)
+	pClk() popOpn=true cM_pop.Visible=true cM_ovl.Visible=true bIn:Play()
+	TS:Create(cM_ovl,TweenInfo.new(0.4),{BackgroundTransparency=0.4}):Play()
+	for _,v in ipairs(actSlots) do v:Destroy() end actSlots={}
+	local slts=typ=="Flying animation" and {"FLY","IDLE","B1","B2","CHG","HOV","HL","HOV_LND"} or {"Idle","Walk","Run","Jump","Fall","Swim"}
+	for j,sName in ipairs(slts) do
+		local cx=(j-1)%3 local cy2=math.floor((j-1)/3)
+		local sw=Instance.new("Frame") sw.Size=UDim2.fromOffset(140,38) sw.Position=UDim2.fromOffset(32+cx*152,78+cy2*48) sw.BackgroundColor3=Color3.fromRGB(20,20,20) sw.BackgroundTransparency=0.2 sw.Parent=cM_pop table.insert(actSlots,sw)
+		local sk=Instance.new("UIStroke") sk.Color=Color3.new(1,1,1) sk.Transparency=0.5 sk.ApplyStrokeMode=Enum.ApplyStrokeMode.Border sk.Parent=sw
+		local sb=Instance.new("TextButton") sb.Size=UDim2.fromScale(1,1) sb.BackgroundTransparency=1 sb.Text=sName sb.TextColor3=Color3.new(1,1,1) sb.Font=Enum.Font.Code sb.TextSize=12 sb.Parent=sw
+		sb.MouseButton1Click:Connect(function()
+			pClk()
+			if typ=="Flying animation" then
+				AIDS[rig][sName]="rbxassetid://"..tostring(acSelId) ldA()
+				game:GetService("StarterGui"):SetCore("SendNotification",{Title="Slot Updated",Text="Assigned to "..sName,Duration=2})
+			else
+				game:GetService("StarterGui"):SetCore("SendNotification",{Title="Slot Updated",Text="Anim Pack: Assigned to "..sName,Duration=2})
+			end
+			clsPop() cM_gui.Enabled=false
+		end)
+	end
+end
+
+local mcCls=Instance.new("TextButton") mcCls.Size=UDim2.fromOffset(100,40) mcCls.Position=UDim2.fromOffset(750,750) mcCls.BackgroundColor3=Color3.fromRGB(140,30,30) mcCls.Text="Close Menu" mcCls.TextColor3=Color3.new(1,1,1) mcCls.Font=Enum.Font.GothamBold mcCls.TextSize=16 mcCls.Parent=cM_gui Instance.new("UICorner",mcCls).CornerRadius=UDim.new(0,6)
+mcCls.MouseButton1Click:Connect(function() pClk() cM_gui.Enabled=false end)
+
+local tCrds={{Name="Flying animation",WIP=false,FrL=true,bK="Fly"},{Name="Animation Packs",WIP=false,FrL=false,bK="Anim"}}
+local bChar=(function()
+	local c=plr.Character or plr.CharacterAdded:Wait()
+	c.Archivable=true local k=c:Clone()
+	for _,ch in ipairs(k:GetDescendants()) do
+		if ch:IsA("Script") or ch:IsA("LocalScript") then ch:Destroy()
+		elseif ch:IsA("BasePart") then ch.Anchored=false ch.CanCollide=false end
+	end
+	local r=k:FindFirstChild("HumanoidRootPart") or k:FindFirstChildWhichIsA("BasePart")
+	if r then r.Anchored=true r.CFrame=CFrame.new(0,0,0) end
+	return k
+end)()
+
+for i,cf in ipairs(tCrds) do
+	local fX=(1600-490)/2+(i-1)*270 local fPos=UDim2.fromOffset(fX,300)
+	local sX=cf.FrL and -420 or 1800 local sPos=UDim2.fromOffset(sX,300)
+	local cd=Instance.new("Frame") cd.Size=UDim2.fromOffset(220,300) cd.Position=sPos cd.BackgroundColor3=Color3.fromRGB(20,20,20) cd.BackgroundTransparency=0.2 cd.Parent=cM_gui
+	Instance.new("UIStroke",cd).Color=Color3.new(1,1,1) Instance.new("UIStroke",cd).Thickness=2
+	local vp=Instance.new("ViewportFrame") vp.Size=UDim2.fromOffset(220,210) vp.BackgroundTransparency=1 vp.Parent=cd
+	Instance.new("UIStroke",vp).Color=Color3.new(1,1,1) Instance.new("UIStroke",vp).Transparency=0.5
+	local wm=Instance.new("WorldModel") wm.Parent=vp local vc=Instance.new("Camera") vp.CurrentCamera=vc vc.Parent=vp
+	task.spawn(function()
+		task.wait(0.2) local sc=bChar:Clone() sc.Parent=wm sc:PivotTo(CFrame.Angles(0,math.rad(180),0))
+		vc.CFrame=CFrame.new(Vector3.new(0,3,7),Vector3.new(0,1,0))
+		local mh=sc:FindFirstChildOfClass("Humanoid") if mh then local ma=mh:FindFirstChildOfClass("Animator") or Instance.new("Animator",mh) local ao=Instance.new("Animation") ao.AnimationId="rbxassetid://507770239" local tk=ma:LoadAnimation(ao) tk.Looped=true tk:Play() end
+	end)
+	if ast[cf.bK] then local bi=Instance.new("ImageLabel") bi.Size=UDim2.fromOffset(52,52) bi.Position=UDim2.fromOffset(8,8) bi.BackgroundTransparency=1 bi.Image=ast[cf.bK] bi.ScaleType=Enum.ScaleType.Fit bi.ZIndex=5 bi.Parent=vp end
+	local ib=Instance.new("Frame") ib.Size=UDim2.fromOffset(220,90) ib.Position=UDim2.fromOffset(0,211) ib.BackgroundTransparency=1 ib.Parent=cd
+	local tl=Instance.new("TextLabel") tl.Size=UDim2.fromOffset(208,18) tl.Position=UDim2.fromOffset(6,5) tl.BackgroundTransparency=1 tl.Text=cf.Name tl.TextColor3=Color3.new(1,1,1) tl.Font=Enum.Font.Code tl.TextSize=13 tl.TextXAlignment=Enum.TextXAlignment.Left tl.Parent=ib
+	local bw=Instance.new("Frame") bw.Size=UDim2.fromOffset(208,24) bw.Position=UDim2.fromOffset(6,60) bw.BackgroundTransparency=1 bw.Parent=ib
+	local bsk=Instance.new("UIStroke") bsk.Color=Color3.new(1,1,1) bsk.ApplyStrokeMode=Enum.ApplyStrokeMode.Border bsk.Parent=bw
+	local btn=Instance.new("TextButton") btn.Size=UDim2.fromScale(1,1) btn.BackgroundTransparency=1 btn.Text="Select" btn.TextColor3=Color3.new(1,1,1) btn.Font=Enum.Font.Code btn.TextSize=12 btn.Parent=bw
+	btn.MouseButton1Click:Connect(function() opnPop(cf.Name) end)
+	task.delay((i-1)*0.1,function() TS:Create(cd,TweenInfo.new(0.7,Enum.EasingStyle.Back,Enum.EasingDirection.Out),{Position=fPos}):Play() end)
+end
+
+acSelBtn.MouseButton1Click:Connect(function()
+	pClk()
+	if not acSelId then game:GetService("StarterGui"):SetCore("SendNotification",{Title="Anim Changer",Text="Select an emote first!",Duration=2}) return end
+	cM_gui.Enabled=true
+end)
+
+acPlayBtn.MouseButton1Click:Connect(function()
+	pClk()
+	if not acSelId then game:GetService("StarterGui"):SetCore("SendNotification",{Title="Anim Changer",Text="Select an emote first!",Duration=2}) return end
+	acPlayAnim(acSelId)
+end)
+
+acStopBtn.MouseButton1Click:Connect(function()
+	pClk()
+	if acCurTrk and acCurTrk.IsPlaying then acCurTrk:Stop(0.2) acCurTrk=nil end
+end)
+
+acSrBox.FocusLost:Connect(function(enter)
+	if enter and acSrBox.Text~="" then acSearch(acSrBox.Text)
+	elseif enter and acSrBox.Text=="" then acLoadPop() end
+end)
+
+acB.MouseButton1Click:Connect(function()
+	pClk()
+	if #acRes:GetChildren()<=1 then acLoadPop() end
+end)
+
+-- FLIGHT SUPPORT FUNCTIONS
+local function spSB()
+	local ok,obj=pcall(function() return game:GetObjects("rbxassetid://132409951367199")[1] end)
+	if not ok or not obj then return end
+	if obj:IsA("BasePart") then obj.Anchored=false obj.CanCollide=false
+	else for _,p in ipairs(obj:GetDescendants()) do if p:IsA("BasePart") then p.Anchored=false p.CanCollide=false end end end
+	obj.Parent=char_
+	local tCF=rig=="R15" and (root.CFrame*CFrame.new(0,2.0,0.6)*CFrame.Angles(math.rad(90),0,0)) or (root.CFrame*CFrame.new(0,0.5,-3.5))
+	if obj:IsA("Model") then obj:PivotTo(tCF) elseif obj:IsA("BasePart") then obj.CFrame=tCF end
+	local pr=obj:IsA("BasePart") and obj or (obj:IsA("Model") and (obj.PrimaryPart or obj:FindFirstChildWhichIsA("BasePart")))
+	if pr then local w=Instance.new("Weld") w.Part0=root w.Part1=pr w.C0=root.CFrame:Inverse() w.C1=pr.CFrame:Inverse() w.Parent=root end
+	local em={}
+	if obj:IsA("ParticleEmitter") then table.insert(em,obj) end
+	for _,c in ipairs(obj:GetDescendants()) do if c:IsA("ParticleEmitter") then table.insert(em,c) end end
+	for _,e in ipairs(em) do
+		e.LockedToPart=true e.Rate=math.clamp(e.Rate*2.5,50,300)
+		local nk={} for _,kp in ipairs(e.Size.Keypoints) do table.insert(nk,NumberSequenceKeypoint.new(kp.Time,kp.Value*2.8,kp.Envelope*2.5)) end
+		e.Size=NumberSequence.new(nk) e.Enabled=true e:Emit(65)
+	end
+	task.delay(0.8,function() if obj and obj.Parent then for _,e in ipairs(em) do e.Enabled=false end task.delay(0.5,function() if obj and obj.Parent then obj:Destroy() end end) end end)
+end
+
+local function spCV()
+	if rig~="R15" then return end
+	if cVfx then cVfx:Destroy() cVfx=nil end
+	local ok,obj=pcall(function() return game:GetObjects("rbxassetid://90369868930247")[1] end)
+	if not ok or not obj then return end cVfx=obj
+	if obj:IsA("BasePart") then obj.Anchored=false obj.CanCollide=false
+	else for _,p in ipairs(obj:GetDescendants()) do if p:IsA("BasePart") then p.Anchored=false p.CanCollide=false end end end
+	obj.Parent=char_
+	local tCF=root.CFrame*CFrame.new(0,-2.5,0)
+	if obj:IsA("Model") then obj:PivotTo(tCF) elseif obj:IsA("BasePart") then obj.CFrame=tCF end
+	local pr=obj:IsA("BasePart") and obj or (obj:IsA("Model") and (obj.PrimaryPart or obj:FindFirstChildWhichIsA("BasePart")))
+	if pr then local w=Instance.new("Weld") w.Part0=root w.Part1=pr w.C0=root.CFrame:Inverse() w.C1=pr.CFrame:Inverse() w.Parent=root end
+	local em={}
+	if obj:IsA("ParticleEmitter") then table.insert(em,obj) end
+	for _,c in ipairs(obj:GetDescendants()) do if c:IsA("ParticleEmitter") then table.insert(em,c) end end
+	for _,e in ipairs(em) do
+		e.LockedToPart=true
+		local nk={} for _,kp in ipairs(e.Size.Keypoints) do table.insert(nk,NumberSequenceKeypoint.new(kp.Time,kp.Value*1.3,kp.Envelope*1.3)) end
+		e.Size=NumberSequence.new(nk)
+		local or2=e.Rate*1.3 e:SetAttribute("OriginalRate",or2) e.Rate=0 e.Enabled=true
+		task.spawn(function()
+			local t=0
+			while t<CTH and cVfx==obj do local d=task.wait(0.05) t=t+d e.Rate=or2*math.clamp(t/CTH,0,1) end
+		end)
+	end
+end
+
+local function spBS()
+	if rig~="R15" then return end
+	local ok,obj=pcall(function() return game:GetObjects("rbxassetid://137419686725114")[1] end)
+	if not ok or not obj then return end
+	local tCF=root.CFrame*CFrame.new(0,-3,0)
+	if obj:IsA("Model") then obj:PivotTo(tCF) elseif obj:IsA("BasePart") then obj.CFrame=tCF obj.Anchored=true obj.CanCollide=false end
+	obj.Parent=workspace
+	for _,it in ipairs(obj:GetDescendants()) do
+		if it:IsA("BasePart") then it.Anchored=true it.CanCollide=false
+		elseif it:IsA("ParticleEmitter") then it.LightEmission=it.LightEmission*0.4 it.Enabled=true it:Emit(14) end
+	end
+	task.delay(0.6,function() if obj then obj:Destroy() end end)
+end
+
+local function clnB()
+	bst=0 cSon=false sCT=0 mSpd=bSpd sCap=bSpd
+	if boTr and boTr.IsPlaying then boTr:Stop(0.25) end
+	if sTr and sTr.IsPlaying then sTr:Stop(0.25) end
+end
+
+local function clrGl()
+	if lvc then lvc:Destroy() lvc=nil end
+	if att0 then att0:Destroy() att0=nil end
+end
+
+local function stFly()
+	clrGl() clnB() bHov=false hov=false lnd=false
+	cVel=root.Velocity tX=0 vR=0 sCap=bSpd iBT=0 cRoll=0 cPit=0
+	camCF=CFrame.new()
+	local lk=cam.CFrame.LookVector
+	camCF=CFrame.Angles(0,math.atan2(-lk.X,-lk.Z),0)*CFrame.Angles(math.asin(math.clamp(lk.Y,-0.95,0.95)),0,0)
+	cam.CameraType=Enum.CameraType.Scriptable
+	if not bv then bv=Instance.new("BodyVelocity") bv.MaxForce=Vector3.new(math.huge,math.huge,math.huge) bv.Parent=root end
+	bv.Velocity=cVel
+	if not bg then bg=Instance.new("BodyGyro") bg.MaxTorque=Vector3.new(math.huge,math.huge,math.huge) bg.P=40000 bg.D=(rig=="R6") and 2500 or 1200 bg.Parent=root end
+	hum.PlatformStand=true
+	if rig=="R15" then bg.CFrame=cam.CFrame fly=true if hTr and hTr.IsPlaying then hTr:Stop(0.2) end if hLndTr and hLndTr.IsPlaying then hLndTr:Stop(0.2) end if iTr then iTr:Play(0.3) end
+	else bg.CFrame=CFrame.lookAt(Vector3.zero,camCF.LookVector,camCF.UpVector) fly=true sAS("idle",0.2) end
+end
+
+local function stHov()
+	clnB() hov=true fly=true bHov=false lnd=false iBT=0
+	if not bv then bv=Instance.new("BodyVelocity") bv.MaxForce=Vector3.new(math.huge,math.huge,math.huge) bv.Parent=root end
+	bv.Velocity=Vector3.zero
+	if not bg then bg=Instance.new("BodyGyro") bg.MaxTorque=Vector3.new(math.huge,math.huge,math.huge) bg.P=40000 bg.D=(rig=="R6") and 2500 or 1200 bg.Parent=root end
+	cam.CameraType=Enum.CameraType.Custom
+	if rig=="R15" then
+		for _,t in ipairs({fTr,boTr,sTr,iTr,gTr}) do if t and t.IsPlaying then t:Stop(0.5) end end
+		if hTr then hTr:Play(0.5) end
+	else
+		local fl=Vector3.new(cam.CFrame.LookVector.X,0,cam.CFrame.LookVector.Z)
+		if fl.Magnitude<0.01 then fl=Vector3.new(0,0,-1) end
+		bg.CFrame=CFrame.lookAt(Vector3.zero,fl.Unit,Vector3.new(0,1,0))
+		sAS("hover",0.35)
+	end
+end
+
+local function lndC()
+	if not hov or lnd then return end lnd=true
+	if rig=="R6" then sAS("hoverTouchdown",0.35) end
+	if rig=="R15" then
+		if hLndTr then
+			if hTr and hTr.IsPlaying then hTr:Stop(0.35) end
+			if P_OFF.HOV_LND then hld(hLndTr,P_OFF.HOV_LND,0.35) else hLndTr:Play(0.35) end
+		end
+	end
+	if bv then bv.Velocity=Vector3.new(bv.Velocity.X,-24,bv.Velocity.Z) end
+end
+
+local function stpFly()
+	fly=false hov=false lnd=false rol=false tX=0 vR=0 cRoll=0 cPit=0 sCap=bSpd bHov=false iBT=0
+	if hum and hum.Parent then hum.PlatformStand=false end
+	if bv then bv:Destroy() bv=nil end if bg then bg:Destroy() bg=nil end
+	if rig=="R15" then for _,t in ipairs({fTr,iTr,gTr,hTr,hLndTr}) do if t then t:Stop(0.25) end end
+	else sAS("none",0.25) end
+	clnB() clrGl()
+	if root and root.Parent then
+		root.AssemblyLinearVelocity=Vector3.zero root.AssemblyAngularVelocity=Vector3.zero
+		local lk=cam.CFrame.LookVector local fl=Vector3.new(lk.X,0,lk.Z)
+		if fl.Magnitude<0.01 then fl=Vector3.new(0,0,-1) else fl=fl.Unit end
+		root.CFrame=CFrame.lookAt(root.Position,root.Position+fl)
+		camCF=CFrame.Angles(0,math.atan2(-fl.X,-fl.Z),0)*CFrame.Angles(math.asin(math.clamp(lk.Y,-0.95,0.95)),0,0)
+	end
+	lF:ClearAllChildren()
+	cam=workspace.CurrentCamera if cam.CameraType==Enum.CameraType.Scriptable then cam.CameraType=Enum.CameraType.Custom end
+end
+
+local function spSD(hp,hi)
+	local df=workspace:FindFirstChild("SlamDebrisFolder")
+	if not df then df=Instance.new("Folder") df.Name="SlamDebrisFolder" df.Parent=workspace end
+	local mat=hi and hi.Material or Enum.Material.Slate local col=hi and hi.Color or Color3.fromRGB(80,80,80) local rks={}
+	for i=1,14 do
+		local r=Instance.new("Part") r.Size=Vector3.new(math.random(10,28)/10,math.random(10,28)/10,math.random(10,28)/10)
+		r.Position=hp+Vector3.new(math.random(-3,3),math.random(0,2),math.random(-3,3)) r.Material=mat r.Color=col r.CanCollide=true r.Parent=df
+		r.Velocity=Vector3.new(math.random(-50,50),math.random(40,85),math.random(-50,50)) r.RotVelocity=Vector3.new(math.random(-30,30),math.random(-30,30),math.random(-30,30))
+		table.insert(rks,r)
+	end
+	task.delay(1.2,function() for _,r in ipairs(rks) do if r and r.Parent then r.CanCollide=false local tw=TS:Create(r,TweenInfo.new(1.2,Enum.EasingStyle.Sine,Enum.EasingDirection.In),{Position=r.Position-Vector3.new(0,6,0),Transparency=1}) tw:Play() tw.Completed:Connect(function() r:Destroy() end) end end end)
+end
+
+local function exHL(hp,hi)
+	hl=true
+	local ld=root.AssemblyLinearVelocity.Unit if ld.Magnitude<0.1 then ld=root.CFrame.LookVector end
+	local fl=Vector3.new(ld.X,0,ld.Z) if fl.Magnitude<0.1 then fl=Vector3.new(root.CFrame.LookVector.X,0,root.CFrame.LookVector.Z) end
+	if fl.Magnitude<0.1 then fl=Vector3.new(0,0,-1) end fl=fl.Unit
+	root.Anchored=true stpFly() root.Anchored=true
+	if rig=="R15" then root.CFrame=CFrame.lookAt(hp+Vector3.new(0,hum.HipHeight+(root.Size.Y/2),0),hp+Vector3.new(0,hum.HipHeight+(root.Size.Y/2),0)+(fl*10))
+	else local rh=root.Size.Y*0.5 root.CFrame=CFrame.lookAt(Vector3.new(hp.X,hp.Y+2+rh,hp.Z),Vector3.new(hp.X,hp.Y+2+rh,hp.Z)+(fl*10)) end
+	root.AssemblyLinearVelocity=Vector3.zero root.AssemblyAngularVelocity=Vector3.zero
+	cam.FieldOfView=120 shk=12
+	if rig=="R15" then
+		if hlTr then hlTr:Play(0.1) end spSD(hp,hi) spBS()
+		local wt=(hlTr and hlTr.Length>0.2) and (hlTr.Length-0.1) or 1.25
+		task.delay(wt,function() if root then root.Anchored=false end hl=false end)
+	else
+		sAS("hardland",0.1) spSD(hp,hi)
+		task.delay(1.25,function() if root then root.Anchored=false end hl=false sAS("idle",0.3) end)
+	end
+end
+
+local function sp3L()
+	local now=os.clock() if now-lLS<LR then return end lLS=now
+	local ln=Instance.new("Part") ln.Name="3DMotionLine" ln.Material=Enum.Material.Neon ln.Shape=Enum.PartType.Block ln.CanCollide=false ln.CastShadow=false ln.Anchored=true ln.Transparency=0.3 ln.Color=Color3.fromRGB(235,250,255)
+	local sr=math.clamp(cVel.Magnitude/(bSpd*7.0),0,1)
+	local lm=1.0+sr*3.5 local tm=1.0+sr*1.5
+	local l=math.random(18,35)*lm ln.Size=Vector3.new(0.08*tm,0.08*tm,l)
+	local so=math.random(-25,25) local uo=math.random(-15,15)
+	if math.abs(so)<5 and math.abs(uo)<4 then so=so+(so>=0 and 6 or -6) end
+	local ld=cVel.Magnitude>10 and cVel.Unit or cam.CFrame.LookVector
+	local lCF=CFrame.lookAt(root.Position,root.Position+ld)
+	local sCF=CFrame.new(so,uo,math.random(5,20)) ln.CFrame=lCF*sCF ln.Parent=lF
+	local zS=math.random(70,130)*lm local tCF=sCF*CFrame.new(0,0,zS)
+	local cn local spT=os.clock() local dur=math.max(0.06,math.random(12,25)/100*(1-sr*0.65)) local capCF=lCF
+	cn=RS.RenderStepped:Connect(function()
+		local el=os.clock()-spT local a=math.clamp(el/dur,0,1)
+		if a>=1 or not ln.Parent then cn:Disconnect() ln:Destroy() return end
+		ln.CFrame=capCF*sCF:Lerp(tCF,a) ln.Transparency=0.3+(a*0.7)
+	end)
+end
+
+-- MAIN TOGGLE
+local isOpen=true
+local function togM()
+	pClk() isOpen=not isOpen sfG.Enabled=isOpen
+	TS:Create(dof,TweenInfo.new(0.3,Enum.EasingStyle.Sine,Enum.EasingDirection.Out),{FarIntensity=isOpen and 1 or 0}):Play()
+end
+UIS.InputBegan:Connect(function(inp,gp) if gp then return end if inp.KeyCode==Enum.KeyCode.M then togM() end end)
+
+-- MAIN RENDERSTEPPED
+_G.MRL=RS.RenderStepped:Connect(function(dt)
+	if isOpen then
+		local c=plr.Character
+		if c and c:FindFirstChild("HumanoidRootPart") then dof.FocusDistance=(cam.CFrame.Position-c.HumanoidRootPart.Position).Magnitude end
+		local tp=(cam.CFrame*CFrame.new(-3.5,-0.2,-4.5)).Position
+		local tc=CFrame.lookAt(tp,cam.CFrame.Position,cam.CFrame.UpVector)
+		mPt.CFrame=CFrame.new(tp)*mPt.CFrame.Rotation:Lerp(tc.Rotation,0.15)
+	end
+
+	-- Card menu parallax
+	local tx=(mouse.X-mouse.ViewSizeX/2)*0.025
+	local ty=(mouse.Y-mouse.ViewSizeY/2)*0.025
+	local t=1-math.exp(-6*dt)
+	if not popOpn then cX=cX+(tx-cX)*t cY=cY+(ty-cY)*t
+	else cX=cX+(0-cX)*(t*0.3) cY=cY+(0-cY)*(t*0.3) end
+	cM_pt.CFrame=cam.CFrame*CFrame.new(0,0,-6)*CFrame.Angles(0,math.rad(cX),0)*CFrame.Angles(math.rad(cY),0,0)
+	cM_oPt.CFrame=cam.CFrame*CFrame.new(0,0,-5.95)
+	if popOpn then
+		local pt=1-math.exp(-4*dt)
+		pLX=pLX+((mouse.X-mouse.ViewSizeX/2)*0.003-pLX)*pt
+		pLY=pLY+((mouse.Y-mouse.ViewSizeY/2)*0.003-pLY)*pt
+		cM_pPt.CFrame=cam.CFrame*CFrame.new(0,0,-5.9)*CFrame.Angles(0,math.rad(pLX*8),0)*CFrame.Angles(math.rad(pLY*8),0,0)
+	else cM_pPt.CFrame=cam.CFrame*CFrame.new(0,0,-5.9) pLX,pLY=0,0 end
+
+	-- Flight logic
+	cam=workspace.CurrentCamera
+	if not root or not root.Parent or not hum or hum.Health<=0 then
+		if cam.CameraType==Enum.CameraType.Scriptable then cam.CameraType=Enum.CameraType.Custom end
+		return
+	end
+
+	if hl then
+		cam.FieldOfView=cam.FieldOfView+(70-cam.FieldOfView)*0.08
+		local tp2=root.Position-(camCF.LookVector*10)+Vector3.new(0,1.5,0)
+		local tc2=CFrame.lookAt(tp2,tp2+camCF.LookVector,camCF.UpVector)
+		if shk>0.1 then
+			cam.CFrame=tc2*CFrame.Angles(math.rad((math.random()-0.5)*shk),math.rad((math.random()-0.5)*shk),math.rad((math.random()-0.5)*shk))
+			shk=shk*0.85
+		else cam.CFrame=tc2 end
+		return
+	end
+
+	if not fly and not hl and cam.CameraType==Enum.CameraType.Scriptable then cam.CameraType=Enum.CameraType.Custom end
+
+	if fly or hov then
+		local rs2=root:FindFirstChild("Running") or (char_ and char_:FindFirstChild("Head") and char_.Head:FindFirstChild("Running"))
+		if rs2 then rs2.Volume=0 end
+	end
+
+	if rig=="R15" and cBl then
+		cT=cT+dt
+		if cT>=CTH then
+			cBl=false cT=0 if cgTr then cgTr:Stop(0) end if cVfx then cVfx:Destroy() cVfx=nil end
+			spBS() stFly()
+			local a0=Instance.new("Attachment") a0.Name="BlastTrailAtt0" a0.Position=Vector3.new(-1.25,0,0) a0.Parent=root
+			local a1=Instance.new("Attachment") a1.Name="BlastTrailAtt1" a1.Position=Vector3.new(1.25,0,0) a1.Parent=root
+			local trl=Instance.new("Trail") trl.Name="BlastOffTrail" trl.Attachment0=a0 trl.Attachment1=a1 trl.Lifetime=0.55
+			trl.Color=ColorSequence.new(Color3.fromRGB(240,243,245))
+			trl.Transparency=NumberSequence.new({NumberSequenceKeypoint.new(0,0.25),NumberSequenceKeypoint.new(1,1)})
+			trl.WidthScale=NumberSequence.new({NumberSequenceKeypoint.new(0,1),NumberSequenceKeypoint.new(1,0)})
+			trl.LightEmission=0.05 trl.LightInfluence=0.4 trl.Parent=root
+			task.delay(0.4,function() if trl and trl.Parent then trl.Enabled=false Debris:AddItem(trl,0.6) Debris:AddItem(a0,0.6) Debris:AddItem(a1,0.6) end end)
+			bHov=true root.CFrame=root.CFrame*CFrame.new(0,4,0) cVel=Vector3.new(0,150,0) if bv then bv.Velocity=cVel end
+			return
+		end
+	end
+
+	tX=tX*0.88
+
+	if fly and bv then
+		local ccf=cam.CFrame
+		if bst==2 and not hov then
+			if ccf.LookVector.Y<-0.4 then
+				local rp=RaycastParams.new() rp.FilterDescendantsInstances={char_} rp.FilterType=Enum.RaycastFilterType.Exclude
+				local vp=cVel*dt*4.0 local cd=vp.Magnitude>3 and vp or (ccf.LookVector*15)
+				local hit=workspace:Raycast(root.Position,cd,rp)
+				if hit and hit.Instance.CanCollide and hit.Normal.Y>0.4 then task.spawn(exHL,hit.Position,hit.Instance) return end
+			end
+		end
+
+		if hov then
+			local bO=0
+			if rig=="R6" and hum.MoveDirection.Magnitude<=0.1 and not lnd then iBT=iBT+dt bO=math.sin(iBT*IBSP)*IBSH else iBT=0 end
+			if bg then
+				local fl=Vector3.new(ccf.LookVector.X,0,ccf.LookVector.Z)
+				if fl.Magnitude>0.05 then
+					if rig=="R15" then bg.CFrame=CFrame.lookAt(root.Position,root.Position+fl.Unit)
+					else local ds=CFrame.lookAt(Vector3.zero,fl.Unit,Vector3.new(0,1,0)) bg.CFrame=bg.CFrame:Lerp(ds,0.06) end
+				end
+			end
+			if rig=="R6" and bO~=0 then bv.Velocity=Vector3.new(bv.Velocity.X,bv.Velocity.Y*0.5+(bO*6),bv.Velocity.Z) end
+			local rp=RaycastParams.new() rp.FilterDescendantsInstances={char_} rp.FilterType=Enum.RaycastFilterType.Exclude
+			local gc=workspace:Raycast(root.Position,Vector3.new(0,-3.2,0),rp)
+			if gc or hum.FloorMaterial~=Enum.Material.Air then stpFly() return end
+			local md=hum.MoveDirection local hs=35 local tv=Vector3.zero
+			if md.Magnitude>0.1 then
+				local lf=Vector3.new(ccf.LookVector.X,0,ccf.LookVector.Z).Unit
+				local rf=Vector3.new(ccf.RightVector.X,0,ccf.RightVector.Z).Unit
+				tv=(ccf.LookVector*md:Dot(lf)*hs)+(ccf.RightVector*md:Dot(rf)*hs)
+			end
+			if lnd then tv=Vector3.new(tv.X,-24,tv.Z) end
+			bv.Velocity=bv.Velocity:Lerp(tv,0.15)
+			if rig=="R15" then
+				if lnd and hLndTr then if hTr and hTr.IsPlaying then hTr:Stop(0.5) end
+				else if P_OFF.HOV then hld(hTr,P_OFF.HOV,0.5) else if hTr and not hTr.IsPlaying then hTr:Play(0.5) end end end
+			end
+			return
+		end
+
+		if not bg then bg=Instance.new("BodyGyro") bg.MaxTorque=Vector3.new(math.huge,math.huge,math.huge) bg.P=40000 bg.D=(rig=="R6") and 2500 or 1200 bg.Parent=root end
+		bv.MaxForce=Vector3.new(math.huge,math.huge,math.huge)
+		local md=hum.MoveDirection
+		if md.Magnitude<=0.05 and bst>0 then clnB() end
+		if md.Magnitude>0.1 and bHov then bHov=false end
+
+		if rig=="R6" then
+			local rr=bst==2 and 3.5 or (bst==1 and 5.0 or 8.0)
+			sCap=sCap+(mSpd-sCap)*math.min(dt*rr,1)
+		else sCap=sCap+(mSpd-sCap)*0.08 end
+
+		if cSon then
+			sCT=sCT+dt cVel=cVel:Lerp(Vector3.zero,0.22) bv.Velocity=cVel
+			local cd=12-(sCT*6) local tp2=root.Position-(camCF.LookVector*cd)+Vector3.new(0,1.5,0)
+			cam.CFrame=CFrame.lookAt(tp2,tp2+camCF.LookVector,camCF.UpVector)
+			if sCT>=SCD then cSon=false bst=2 mSpd=bSpd*7.0 sCap=mSpd spSB() end
+			return
+		end
+
+		local isM=md.Magnitude>0.1
+
+		if rig=="R6" and isM and cVel.Magnitude>5 then
+			local vd=cVel.Unit local vy=math.atan2(-vd.X,-vd.Z) local cy=math.atan2(-camCF.LookVector.X,-camCF.LookVector.Z)
+			local yd=vy-cy
+			while yd>math.pi do yd=yd-math.pi*2 end while yd<-math.pi do yd=yd+math.pi*2 end
+			local ca=math.clamp((cVel.Magnitude-bSpd*0.5)/(bSpd*6.0),0,1)*0.06 ca=math.max(ca,0.025)
+			camCF=CFrame.Angles(0,yd*ca,0)*camCF
+		end
+
+		if rig=="R6" then
+			if isM and not bHov then
+				if bst==2 then sAS("boost2",0.3)
+				elseif bst==1 then sAS("boost1",0.3)
+				else sAS("fly",0.3) if fTr then fTr:AdjustSpeed(0.4+(cVel.Magnitude/bSpd)*0.6) end end
+			else sAS("idle",0.3) end
+		end
+
+		local tcr=math.clamp(tX*1.5,-math.rad(rig=="R6" and 14 or 10),math.rad(rig=="R6" and 14 or 10))
+		vR=vR+(tcr-vR)*(rig=="R6" and 0.18 or 0.15)
+		local cd=14+((sCap/bSpd)*2.5)
+
+		if rig=="R6" then
+			local ts=math.clamp(tX*6,-3,3)
+			local lo=camCF.RightVector*ts
+			local tp2=root.Position-(camCF.LookVector*cd)+Vector3.new(0,1.5,0)+lo
+			local uc=camCF*CFrame.Angles(0,0,vR)
+			local dc=CFrame.lookAt(tp2,tp2+uc.LookVector,uc.UpVector)
+			cam.CFrame=cam.CFrame:Lerp(dc,bst==2 and math.min(dt*20,1) or 0.45)
+		else
+			local tp2=root.Position-(camCF.LookVector*cd)+Vector3.new(0,1.5,0)
+			local uc=camCF*CFrame.Angles(0,0,vR)
+			cam.CFrame=CFrame.lookAt(tp2,tp2+uc.LookVector,uc.UpVector)
+		end
+
+		local tv=Vector3.zero local tr=0 local tp=0
+		local lf=Vector3.new(ccf.LookVector.X,0,ccf.LookVector.Z)
+		if lf.Magnitude<0.01 then lf=Vector3.new(0,0,-1) else lf=lf.Unit end
+
+		if isM then
+			local rf=Vector3.new(ccf.RightVector.X,0,ccf.RightVector.Z).Unit
+			local fw=md:Dot(lf) local sd=md:Dot(rf)
+			local sm=sCap if math.abs(sd)>0.2 then sm=sCap*(1-(math.abs(sd)*0.25)) end
+			tv=tv+(ccf.LookVector*(fw*sm)) tv=tv+(rf*(sd*sCap*0.85))
+			if rig=="R6" then
+				local sf=math.abs(sd)-math.abs(fw)*0.4
+				if sf>0.1 then
+					local yr=sf*math.sign(sd)*math.rad(2.5)*math.clamp(cVel.Magnitude/bSpd,0.3,1.0)
+					camCF=CFrame.Angles(0,-yr,0)*camCF
+				end
+				tr=(-sd*math.rad(45))+(tX*2.8)
+			else tr=(-sd*math.rad(38))+(tX*2.2) end
+			if math.abs(fw)>0.5 then tp=ccf.LookVector.Y*math.rad(30) end
+			if bst>0 and fw>0.2 then sp3L() end
+			iBT=0
+		else tr=tX*(rig=="R6" and 2.8 or 2.2) tv=cVel*0.30 end
+
+		local vl
+		if rig=="R6" then
+			local bl=(math.abs(tX)>0.01) and 0.07 or acc
+			vl=bst==2 and math.min(dt*12,1) or (bst==1 and math.min(dt*8,1) or bl)
+		else vl=(math.abs(tX)>0.01) and 0.07 or acc end
+
+		cVel=cVel:Lerp(tv,vl) cPit=cPit+(tp-cPit)*0.1 bv.Velocity=cVel
+
+		local bY=0
+		if rig=="R6" and not isM and not rol then iBT=iBT+dt bY=math.sin(iBT*IBSP)*IBSH end
+
+		if rol then
+			rPr=rPr+0.05 local sa=(rPr*math.pi*2)*rDr
+			if rig=="R6" then
+				local br=CFrame.lookAt(Vector3.zero,camCF.LookVector,camCF.UpVector)*CFrame.Angles(math.rad(-90),0,0)
+				bg.CFrame=br*CFrame.Angles(0,0,sa)
+			else
+				local br=CFrame.lookAt(Vector3.zero,ccf.LookVector,ccf.UpVector)
+				bg.CFrame=br*CFrame.Angles(0,0,sa)
+			end
+			if rPr>=1 then rol=false rPr=0 end
+		else
+			local mr=math.rad(rig=="R6" and 70 or 60)
+			cRoll=math.clamp(cRoll+(tr-cRoll)*(rig=="R6" and 0.10 or 0.12),-mr,mr)
+			if rig=="R6" then
+				if isM then
+					local br=CFrame.lookAt(Vector3.zero,camCF.LookVector,camCF.UpVector)*CFrame.Angles(math.rad(-90),0,0)
+					bg.CFrame=bg.CFrame:Lerp(br*CFrame.Angles(0,0,cRoll),0.14)
+				else
+					local fl=Vector3.new(camCF.LookVector.X,0,camCF.LookVector.Z)
+					if fl.Magnitude<0.01 then fl=Vector3.new(0,0,-1) else fl=fl.Unit end
+					bg.CFrame=bg.CFrame:Lerp(CFrame.lookAt(Vector3.zero,fl,Vector3.new(0,1,0)),0.04)
+				end
+			else
+				local br=CFrame.lookAt(Vector3.zero,ccf.LookVector,ccf.UpVector)
+				bg.CFrame=br*CFrame.Angles(0,0,cRoll)
+			end
+		end
+
+		if rig=="R6" and bY~=0 then bv.Velocity=Vector3.new(cVel.X,cVel.Y+(bY*4),cVel.Z) end
+
+		if rig=="R15" then
+			local si=cVel.Magnitude
+			if md.Magnitude>0.1 and not bHov then
+				if iTr and iTr.IsPlaying then iTr:Stop(0.25) end
+				if bst==2 then
+					if fTr and fTr.IsPlaying then fTr:Stop(0.25) end if boTr and boTr.IsPlaying then boTr:Stop(0.25) end
+					if P_OFF.B2 then hld(sTr,P_OFF.B2,0.25)
+					else if sTr and not sTr.IsPlaying then sTr:Play(0.25) end sTr:AdjustSpeed(0.5+(si/(bSpd*7.0))*0.7) end
+				elseif bst==1 then
+					if fTr and fTr.IsPlaying then fTr:Stop(0.25) end if sTr and sTr.IsPlaying then sTr:Stop(0.25) end
+					if P_OFF.B1 then hld(boTr,P_OFF.B1,0.25)
+					else if boTr and not boTr.IsPlaying then boTr:Play(0.25) end boTr:AdjustSpeed(0.4+(si/(bSpd*3.5))*0.8) end
+				else
+					if boTr and boTr.IsPlaying then boTr:Stop(0.25) end if sTr and sTr.IsPlaying then sTr:Stop(0.25) end
+					if P_OFF.FLY then hld(fTr,P_OFF.FLY,0.25)
+					else if fTr and not fTr.IsPlaying then fTr:Play(0.25) end fTr:AdjustSpeed(0.4+(si/bSpd)*0.6) end
+				end
+			else
+				for _,t in ipairs({fTr,boTr,sTr}) do if t and t.IsPlaying then t:Stop(0.3) end end
+				if P_OFF.IDLE then hld(iTr,P_OFF.IDLE,0.3)
+				else if iTr and not iTr.IsPlaying then iTr:Play(0.3) end end
+			end
+		end
+	else
+		if cam.CameraType==Enum.CameraType.Scriptable then cam.CameraType=Enum.CameraType.Custom end
+		if rig=="R15" then
+			for _,t in ipairs({iTr,fTr,boTr,sTr,gTr,hTr,hlTr,hLndTr}) do if t and t.IsPlaying then t:Stop(0.2) end end
+		else sAS("none",0.2) end
+		cVel=Vector3.zero iBT=0 lF:ClearAllChildren()
+	end
+end)
+
+-- MOBILE FLY BUTTON
+pcall(function() game:GetService("CoreGui"):FindFirstChild("MobileFlyGui"):Destroy() end)
+local gui=Instance.new("ScreenGui") gui.Name="MobileFlyGui" gui.ResetOnSpawn=false gui.Parent=game:GetService("CoreGui")
+local fn2="Haha_FlyIcon.png"
+local iU="https://raw.githubusercontent.com/alexanderhensworth-dev/I-guess-bro-/refs/heads/main/Haha.png"
+pcall(function() if not isfile(fn2) then local d=game:HttpGet(iU) writefile(fn2,d) end end)
+local tgl=Instance.new("ImageButton") tgl.Size=UDim2.new(0,75,0,75) tgl.Position=UDim2.new(0.5,-375,0.8,-12) tgl.BackgroundTransparency=1 tgl.Image=getcustomasset(fn2) tgl.Parent=gui tgl.Active=true tgl.Draggable=true
+
+UIS.InputBegan:Connect(function(inp,proc)
+	if proc then return end
+	if inp.UserInputType==Enum.UserInputType.Touch and not tIn then tIn=inp lTP=inp.Position end
+end)
+
+UIS.InputChanged:Connect(function(inp,proc)
+	if proc then return end if not tIn then return end
+	if inp==tIn and lTP then
+		local dl=inp.Position-lTP lTP=inp.Position
+		local sens=0.005
+		tX=tX-(dl.X*sens)
+		if rig=="R6" and fly and not hov then
+			local uy=camCF.UpVector.Y local ys=(uy<0) and -1 or 1
+			camCF=CFrame.Angles(0,-dl.X*sens*ys,0)*camCF*CFrame.Angles(-dl.Y*sens,0,0)
+		else
+			camCF=CFrame.Angles(0,-dl.X*sens,0)*camCF*CFrame.Angles(-dl.Y*sens,0,0)
+		end
+	end
+end)
+
+UIS.InputEnded:Connect(function(inp) if inp==tIn then tIn=nil lTP=nil end end)
+
+UIS.TouchTapInWorld:Connect(function(tp2,proc)
+	if not fly or hov or proc or rol or cSon or hl then return end
+	local now=os.clock()
+	if now-lTap<tCD then
+		local sw=cam.ViewportSize.X
+		rol=true rPr=0
+		rDr=tp2.X>sw/2 and -1 or 1
+	end
+	lTap=now
+end)
+
+tgl.MouseButton1Down:Connect(function()
+	pClk()
+	if hov then lndC() return end
+	if rig=="R15" then
+		if fly or cBl or hl or (hum and hum.Health<=0) then return end
+		cBl=true cT=0 if cgTr then cgTr:Play(0.1) end spCV()
+	else
+		if fly and not hl and (hum and hum.Health>0) then
+			if hum.MoveDirection.Magnitude<=0.05 and bst==0 then stHov() end
+		end
+	end
+end)
+
+local function canCh()
+	if rig~="R15" then return end
+	if cBl then cBl=false cT=0 if cgTr then cgTr:Stop(0.2) end if cVfx then cVfx:Destroy() cVfx=nil end end
+end
+tgl.MouseButton1Up:Connect(canCh) tgl.MouseLeave:Connect(canCh)
+
+UIS.JumpRequest:Connect(function()
+	if cSon or cBl or hl or (hum and hum.Health<=0) then return end
+	if fly then
+		if hov then stFly() return end
+		local now=os.clock()
+		if now-ljt<jcd then
+			if bst==0 then
+				bst=1 mSpd=bSpd*3.5 sCap=mSpd
+				if rig=="R15" and boTr and not boTr.IsPlaying then boTr:Play(0.4) end
+			elseif bst==1 then cSon=true sCT=0 end
+			if rig=="R15" then ljt=0 end
+		else
+			if rig=="R15" then
+				if hum.MoveDirection.Magnitude<=0.05 and bst==0 then stHov() else ljt=now end
+			end
+		end
+		if rig=="R6" then ljt=now end
+	else
+		if hum and hum.FloorMaterial==Enum.Material.Air then stFly() end
+	end
+end)
+
+local function initC(c)
+	char_=c hum=c:WaitForChild("Humanoid") root=c:WaitForChild("HumanoidRootPart") anim=hum:WaitForChild("Animator")
+	rig=hum.RigType==Enum.HumanoidRigType.R6 and "R6" or "R15"
+	cam=workspace.CurrentCamera aS="none" ldA()
+	if _G.PWI then for id,_ in pairs(_G.PWI) do task.spawn(function() wAc(id) end) end end
+	hum.Died:Connect(function() stpFly() hl=false cam=workspace.CurrentCamera cam.CameraType=Enum.CameraType.Custom end)
+	hl=false if fly then stpFly() else clrGl() clnB() end
+	if cam.CameraType==Enum.CameraType.Scriptable then cam.CameraType=Enum.CameraType.Custom end
+end
+
+if plr.Character then initC(plr.Character) end
+plr.CharacterAdded:Connect(initC)
+plr.CharacterRemoving:Connect(function()
+	stpFly() hl=false cam=workspace.CurrentCamera
+	if cam.CameraType==Enum.CameraType.Scriptable then cam.CameraType=Enum.CameraType.Custom end
+end)
